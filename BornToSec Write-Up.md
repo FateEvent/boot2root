@@ -1076,7 +1076,7 @@ We calculate the offset towards EIP, by taking the string contained in EIP ("6Ae
 ┌──(fab㉿kali)-[~]
 └─$
 ```
-We need to pad our input with 140 characters before adding our shellcode that will be written on the memory.
+We need to pad our input with 140 characters before adding our shellcode that will be written on the memory (for understanding how to create a shellcode, refer to [this link](https://www.arsouyes.org/blog/2019/54_Shellcode/index.en.html), and [here](http://shell-storm.org/shellcode/index.html) is a large corpus of shellcodes).
 
 However, we need to find the address of the ESP where a pointer to the previous instruction is stored:
 ```
@@ -1119,12 +1119,8 @@ zaz@BornToSecHackMe:~$ ./exploit_me `perl -e 'print "A"x140 . "\xb0\xf6\xff\xbf"
 ```
 ![[Pasted image 20240425153034.png]]
 
+And I'm root!
 
-
-
-
-[shellcode](https://www.arsouyes.org/blog/2019/54_Shellcode/index.en.html)
-http://shell-storm.org/shellcode/files/shellcode-827.html
 
 
 
