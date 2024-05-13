@@ -1234,24 +1234,6 @@ zaz@BornToSecHackMe:~/mail/.imap$ cat dovecot.mailbox.log
 9�oh�P`V�!�RCN�j�6i��0V�zaz@BornToSecHackMe:~/mail/.imap$
 ```
 
-In a folder named `mail/.imap/` we find some [Dovecot logs](https://doc.dovecot.org/admin_manual/logging), with detailed error messages:
-```shell
-zaz@BornToSecHackMe:~/mail/.imap$ ls -la
-total 1
-drwxr-x--- 5 zaz zaz  99 Oct  8  2015 .
-drwxr-x--- 3 zaz zaz 107 Oct  8  2015 ..
--rwxr-x--- 1 zaz zaz  72 Oct  8  2015 dovecot.mailbox.log
-drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Drafts
-drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Sent
-drwxr-x--- 2 zaz zaz  40 Oct  8  2015 INBOX.Trash
-zaz@BornToSecHackMe:~/mail/.imap$ cat INBOX.Drafts/dovecot.index.log
-(��V��V����@���mbox���� ��V�'��V�Y9�K|���� ��V���� @�zaz@BornToSecHackMe:~/mail/.imap$ pwd
-/home/zaz/mail/.imap
-zaz@BornToSecHackMe:~/mail/.imap$ cat dovecot.mailbox.log
-�v�}<~�q��~�&V�
-9�oh�P`V�!�RCN�j�6i��0V�zaz@BornToSecHackMe:~/mail/.imap$
-```
-
 Something is going on here... Let's investigate.
 
 To read the logs I need the command [`doveadm log`](https://doc.dovecot.org/3.0/man/doveadm-log.1), the utility `doveadm` being of course installed in the host machine:
