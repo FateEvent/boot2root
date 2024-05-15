@@ -876,6 +876,42 @@ void phase_5(char *param_1)
 
 
 
+And my program:
+```c
+#include <stdio.h>
+#include <string.h>
+
+int     happy_anding(int c) {
+        int i = 0;
+        while (i <= 255) {
+                int lettre = i & 15;
+                if (lettre == c) {
+                        printf("bin: %d", lettre);
+                        return lettre;
+                }
+                i++;
+        }
+        return -1;
+}
+
+int     main() {
+
+        int array[6] = {15, 0, 5, 11, 13, 1};
+        int i = 0;
+        while (i < 6) {
+                int lettre = happy_anding(array[i]);
+                if (lettre == -1)
+                        return 1;
+                printf("letters: %d\n", lettre);
+                i++;
+        }
+}
+```
+
+
+
+
+
 And finally the function `phase_6`:
 ```c
 void phase_6(char *param_1)
