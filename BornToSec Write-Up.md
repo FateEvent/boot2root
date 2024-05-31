@@ -1250,7 +1250,7 @@ And I'm root!
 
 
 
-
+### Cutting through IMAP
 
 In the home directory of zaz, in a folder named `mail/.imap/` we find some [Dovecot](https://www.dovecot.org)[logs](https://doc.dovecot.org/admin_manual/logging) with what resembles to an error message (the [Internet Message Access Protocol](https://www.cloudflare.com/learning/email-security/what-is-imap) is a protocol allowing access to an e-mail account, while [Simple Mail Transfer Protocol](https://www.cloudflare.com/learning/email-security/what-is-smtp) is a technical standard for transmitting electronic mail over a network):
 ```shell
@@ -1459,7 +1459,7 @@ A2 LIST "" "*"
 A2 OK List completed.
 
 ```
-I tried to connect to IMAP server with users such as `thor` and `laurie` (couldn't connect as `lmezard` because of bad characters in the password) but their inbox is empty.
+I tried to connect to IMAP server with users such as `thor` and `laurie` (couldn't connect as `lmezard` because of bad characters in the password, that are refused by IMAP) but their inbox is empty.
 
 When I connected as `laurie@borntosec.net`, however, I discovered they sent the mails they had received from `qudevide@mail.borntosec.net` to user `ft_root`, and that's suspect:
 ```shell
@@ -1561,7 +1561,12 @@ Best regards.
 a4 OK Fetch completed.
 ```
 
-
+Let's test the credentials:
+```
+lmezard:!q\]Ej?*5K5cy*AJ
+lmezard:G!@M6f4Eatau{sF"
+```
+with Thunderbird. To do this, we add `borntosec.net` to our `/etc/hosts` file:
 
 
 
