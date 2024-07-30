@@ -1,16 +1,17 @@
+My first task was to find the IP address of the machine. To do that, I configured the machine to run in a [_host-only network_ ](https://superuser.com/a/1503210):
+
 ![[Pasted image 20240417170443.png]]
+
 ![[Pasted image 20240417170507.png]]
+
 ![[Pasted image 20240417170537.png]]
 
+As suggested, the host’s IP was `192.168.56.1`, namely, the first address in the _host-only network_.
 
-
-
-
-
-I launched the machine and made a scan on my local network:
+I then launched the machine and made a scan on my local network:
 ```shell
 ┌──(fab㉿kali)-[~]
-└─$ nmap 192.168.56.3/24
+└─$ nmap 192.168.56.1/24
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-17 16:50 CEST
 Nmap scan report for DESKTOP-D3V2624 (192.168.56.1)
 Host is up (0.56s latency).
@@ -33,19 +34,6 @@ PORT    STATE SERVICE
 993/tcp open  imaps
 
 Nmap done: 256 IP addresses (2 hosts up) scanned in 5.31 seconds
-
-┌──(fab㉿kali)-[~]
-└─$ sudo nmap -sU -sC -sV -Pn 192.168.56.101
-[sudo] password for fab:
-Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-04-19 16:49 CEST
-Nmap scan report for 192.168.56.101
-Host is up (0.0020s latency).
-Not shown: 999 closed udp ports (port-unreach)
-PORT   STATE         SERVICE VERSION
-68/udp open|filtered dhcpc
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 1123.69 seconds
 
 ┌──(fab㉿kali)-[~]
 └─$
