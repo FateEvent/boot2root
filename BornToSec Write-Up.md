@@ -1350,10 +1350,10 @@ bool main(int param_1,int param_2)
 
 To learn how to execute a buffer overflow, I followed the leads of [Processus Thief on YouTube](https://www.youtube.com/watch?v=Uk-xv8uxiJo).
 
-Since the LibC is used, we can maybe make the program [call a function](https://reverseengineering.stackexchange.com/questions/27826/using-a-buffer-overflow-to-call-a-function) like `execve()` through a [buffer overflow](https://pointerless.wordpress.com/2012/02/26/strcpy-security-exploit-how-to-easily-buffer-overflow):
+Since the LibC is used, we can probably make the program [call a function](https://reverseengineering.stackexchange.com/questions/27826/using-a-buffer-overflow-to-call-a-function) like `system()` or `execve()` through a [buffer overflow](https://pointerless.wordpress.com/2012/02/26/strcpy-security-exploit-how-to-easily-buffer-overflow):
 ![[Pasted image 20240424184520.png]]
 
-Among the tools available by default on Linux to analyze an executable, we have `readelf`, `objdumps`, `nm`, `gdb`, `dmesg`.. Please refer to this [write-up](https://jaybailey216.com/pwn-challenge-bat-computer) to see some of these tools at work.
+Among the tools available by default on Linux to analyze an executable, we have `readelf`, `objdumps`, `nm`, `gdb`, `dmesg`... Refer to this [write-up](https://jaybailey216.com/pwn-challenge-bat-computer) to see some of these tools at work.
 
 To create a buffer overflow we can use Python:
 ```shell
