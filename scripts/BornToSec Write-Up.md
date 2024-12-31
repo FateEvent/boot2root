@@ -1178,7 +1178,7 @@ We now have a list of the possible results, and we will use [Hydra](https://www.
 
 ```shell
 ┌──(fab㉿kali)-[~]
-└─$ hydra -l thor -p wordlist.txt 192.168.56.101 ssh
+└─$ hydra -l thor -P wordlist.txt 192.168.56.101 ssh
 <SNIP>
 
 ```
